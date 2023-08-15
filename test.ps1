@@ -28,30 +28,28 @@ Import-Module $Module -Force
 Test-PreReleaseModule
 Get-Module 'prerelease-test-module' | Format-Table
 
-if ($Publish) {
-    $ApiKey = (Get-Credential ApiKey -Message 'Enter your API key as the password')
-    $WhatIf = $true
-    switch ($Mode) {
-        'PowerShellGet' {
-            $Params = @{
-                Path = $Module | Split-Path -Parent
-                Repository = 'PSGallery'
-                Verbose = $true
-                WhatIf = $WhatIf
-            }
-            Publish-Module @Params -NuGetApiKey $ApiKey
+$ApiKey = (Get-Credential ApiKey -Message 'Enter your API key as the password')
+$WhatIf = -not $Publish.IsPresent
+switch ($Mode) {
+    'PowerShellGet' {
+        $Params = @{
+            Path = $Module | Split-Path -Parent
+            Repository = 'PSGallery'
+            Verbose = $true
+            WhatIf = $WhatIf
         }
-        'PSResourceGet' {
-            $Params = @{
-                Path = $Module
-                Repository = 'PSGallery'
-                Verbose = $true
-                WhatIf = $WhatIf
-            }
-            Publish-PSResource @Params -ApiKey $ApiKey
+        Publish-Module @Params -NuGetApiKey $ApiKey
+    }
+    'PSResourceGet' {
+        $Params = @{
+            Path = $Module
+            Repository = 'PSGallery'
+            Verbose = $true
+            WhatIf = $WhatIf
         }
-        Default {
-            throw 'invalid pass.'
-        }
+        Publish-PSResource @Params -ApiKey $ApiKey
+    }
+    Default {
+        throw 'invalid pass.'
     }
 }
