@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <RootNamespace>prerelease_test_module</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Library.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="prerelease-test-module.psd1" Pack="true" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" />
+  </ItemGroup>
+
+</Project>
