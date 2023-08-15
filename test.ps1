@@ -1,6 +1,11 @@
 [CmdletBinding()]
 param (
     [Parameter()]
+    [ValidateSet('PowerShellGet', 'PSResourceGet')]
+    [ValidateNotNullOrEmpty()]
+    [string]
+    $Mode,
+    [Parameter()]
     [switch]
     $Publish
 )
@@ -24,12 +29,29 @@ Test-PreReleaseModule
 Get-Module 'prerelease-test-module' | Format-Table
 
 if ($Publish) {
-    $Params = @{
-        Path = $Module
-        ApiKey = (Get-Credential ApiKey -Message 'Enter your API key as the password')
-        Repository = 'PSGallery'
-        Verbose = $true
-        # WhatIf = $true
+    $ApiKey = (Get-Credential ApiKey -Message 'Enter your API key as the password')
+    $WhatIf = $true
+    switch ($Mode) {
+        'PowerShellGet' {
+            $Params = @{
+                Path = $Module | Split-Path -Parent
+                Repository = 'PSGallery'
+                Verbose = $true
+                WhatIf = $WhatIf
+            }
+            Publish-Module @Params -NuGetApiKey $ApiKey
+        }
+        'PSResourceGet' {
+            $Params = @{
+                Path = $Module
+                Repository = 'PSGallery'
+                Verbose = $true
+                WhatIf = $WhatIf
+            }
+            Publish-PSResource @Params -ApiKey $ApiKey
+        }
+        Default {
+            throw 'invalid pass.'
+        }
     }
-    Publish-PSResource @Params
 }
