@@ -28,7 +28,7 @@ Import-Module $Module -Force
 Test-PreReleaseModule
 Get-Module 'prerelease-test-module' | Format-Table
 
-$ApiKey = (Get-Credential ApiKey -Message 'Enter your API key as the password')
+$ApiKey = (Get-Credential ApiKey -Message 'Enter your API key as the password').GetNetworkCredential().Password
 $WhatIf = -not $Publish.IsPresent
 switch ($Mode) {
     'PowerShellGet' {
