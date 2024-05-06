@@ -1,4 +1,4 @@
-namespace wrap_dus_or_not
+﻿namespace wrap_dus_or_not
 
 open System.Collections
 open System.Management.Automation
@@ -27,17 +27,27 @@ type OutObjectWrappedDUsCommand() =
     let addProps (io: PSObject) =
         match io.BaseObject with
         | :? IDictionary as dct ->
-            for d in Seq.cast<DictionaryEntry> dct do
-                d |> PSObject.AsPSObject |> _.Properties |> Seq.iter (fun p -> p |> _.Name |> props.Add |> ignore)
+            let d = Seq.cast<DictionaryEntry> dct |> Seq.head
+            d |> PSObject.AsPSObject |> _.Properties |> Seq.iter (fun p -> p |> _.Name |> props.Add |> ignore)
         | _ ->
             for p in io.Properties do
                 p |> _.Name |> props.Add |> ignore
+
+    let addProps2 (io: PSObject) =
+        match io.BaseObject with
+        // | :? IDictionary as dct ->
+        //     let d = Seq.cast<DictionaryEntry> dct |> Seq.head
+        //     d |> PSObject.AsPSObject |> _.Properties |> Seq.iter (fun p -> p |> _.Name |> props.Add |> ignore)
+        | _ ->
+            for p in io.Properties do
+                if not (props.Contains p.Name) then
+                    p.Name |> props.Add |> ignore
 
     [<Parameter(Position = 0, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)>]
     member val InputObject: PSObject [] = [||] with get, set
 
     [<Parameter(Mandatory = true)>]
-    [<ValidateSet("Raw", "DUs", "Properties", "RawAndProperties", "DUsAndProperties")>]
+    [<ValidateSet("Raw", "DUs", "Properties", "RawAndProperties", "DUsAndProperties","Properties2", "RawAndProperties2", "DUsAndProperties2")>]
     [<ValidateNotNullOrEmpty>]
     member val Mode: string = null with get, set
 
@@ -58,6 +68,15 @@ type OutObjectWrappedDUsCommand() =
             | "DUsAndProperties" ->
                 io |> add
                 io |> addProps
+            | "Properties2" ->
+                io |> addProps2
+            | "RawAndProperties2" ->
+                io |> input.Add
+                io |> addProps2
+            | "DUsAndProperties2" ->
+                io |> add
+                io |> addProps2
+
             | _ -> ()
 
     override __.EndProcessing() =
