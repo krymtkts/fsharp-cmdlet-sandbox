@@ -37,7 +37,7 @@ type OutObjectWrappedDUsCommand() =
     member val InputObject: PSObject [] = [||] with get, set
 
     [<Parameter(Mandatory = true)>]
-    [<ValidateSet("Raw", "DUs", "Properties", "Both")>]
+    [<ValidateSet("Raw", "DUs", "Properties", "RawAndProperties", "DUsAndProperties")>]
     [<ValidateNotNullOrEmpty>]
     member val Mode: string = null with get, set
 
@@ -52,14 +52,17 @@ type OutObjectWrappedDUsCommand() =
                 io |> add
             | "Properties" ->
                 io |> addProps
-            | "Both" ->
+            | "RawAndProperties" ->
+                io |> input.Add
+                io |> addProps
+            | "DUsAndProperties" ->
                 io |> add
                 io |> addProps
             | _ -> ()
 
     override __.EndProcessing() =
         // print memory usage.
-        printfn "Memory usage: %d" (System.GC.GetTotalMemory(true))
+        printfn "%20s Memory usage: %s" __.Mode <| System.GC.GetTotalMemory(true).ToString("#,##0")
 
 // Raw          259,237,176
 // DUs          283,093,752
