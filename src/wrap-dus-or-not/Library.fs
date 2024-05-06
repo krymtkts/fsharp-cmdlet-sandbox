@@ -49,7 +49,8 @@ type OutObjectWrappedDUsCommand() =
         match io.BaseObject with
         | _ ->
             for p in io.Properties do
-                p.Name |> ignore
+                // p.Name |> ignore
+                ()
 
     let addTypes (io: PSObject) =
         io.BaseObject.GetType() |> types.Add |> ignore
