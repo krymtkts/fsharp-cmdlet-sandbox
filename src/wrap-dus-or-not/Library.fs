@@ -17,7 +17,7 @@ type OutObjectWrappedDUsCommand() =
     let input: obj Generic.List = Generic.List()
     let props: string Generic.HashSet = Generic.HashSet()
     let types: System.Type Generic.HashSet = Generic.HashSet()
-    let typeAndProps: Generic.Dictionary<System.Type,string seq> = Generic.Dictionary()
+    let typeAndProps: Generic.Dictionary<string,string seq> = Generic.Dictionary()
 
     let add (io: PSObject) =
         match io.BaseObject with
@@ -56,7 +56,7 @@ type OutObjectWrappedDUsCommand() =
         io.BaseObject.GetType() |> types.Add |> ignore
 
     let addTypeAndProps (io: PSObject) =
-        let t = io.BaseObject.GetType()
+        let t = io.BaseObject.GetType().FullName
         if t |> typeAndProps.ContainsKey  |> not then
             let props = io.Properties |> Seq.map (fun p -> p.Name)
             typeAndProps.Add (t, props) |> ignore
