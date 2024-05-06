@@ -1,4 +1,4 @@
-﻿namespace wrap_dus_or_not
+namespace wrap_dus_or_not
 
 open System.Collections
 open System.Management.Automation
@@ -62,7 +62,7 @@ type OutObjectWrappedDUsCommand() =
 
     override __.EndProcessing() =
         // print memory usage.
-        printfn "%20s Memory usage: %s" __.Mode <| System.GC.GetTotalMemory(true).ToString("#,##0")
+        printfn "%20s Memory usage: %20s" __.Mode <| System.GC.GetTotalMemory(true).ToString("#,##0")
 
 // Raw          259,237,176
 // DUs          283,093,752
