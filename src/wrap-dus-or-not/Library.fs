@@ -15,7 +15,9 @@ type OutObjectWrappedDUsCommand() =
     inherit PSCmdlet()
 
     let input: obj Generic.List = Generic.List()
-    let props: obj Generic.HashSet = Generic.HashSet()
+    let props: string Generic.HashSet = Generic.HashSet()
+    let types: System.Type Generic.HashSet = Generic.HashSet()
+    let typeAndProps: Generic.Dictionary<System.Type,string seq> = Generic.Dictionary()
 
     let add (io: PSObject) =
         match io.BaseObject with
@@ -43,11 +45,38 @@ type OutObjectWrappedDUsCommand() =
                 if not (props.Contains p.Name) then
                     p.Name |> props.Add |> ignore
 
+    let throughProps (io: PSObject) =
+        match io.BaseObject with
+        | _ ->
+            for p in io.Properties do
+                p.Name |> ignore
+
+    let addTypes (io: PSObject) =
+        io.BaseObject.GetType() |> types.Add |> ignore
+
+    let addTypeAndProps (io: PSObject) =
+        let t = io.BaseObject.GetType()
+        if t |> typeAndProps.ContainsKey  |> not then
+            let props = io.Properties |> Seq.map (fun p -> p.Name)
+            typeAndProps.Add (t, props) |> ignore
+
     [<Parameter(Position = 0, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)>]
     member val InputObject: PSObject [] = [||] with get, set
 
     [<Parameter(Mandatory = true)>]
-    [<ValidateSet("Raw", "DUs", "Properties", "RawAndProperties", "DUsAndProperties","Properties2", "RawAndProperties2", "DUsAndProperties2")>]
+    [<ValidateSet(
+        "Raw",
+        "DUs",
+        "Properties",
+        "RawAndProperties",
+        "DUsAndProperties","Properties2",
+        "RawAndProperties2",
+        "DUsAndProperties2",
+        "Types",
+        "DUsAndThroughProperties",
+        "RawAndProperties3",
+        "DUsAndProperties3"
+    )>]
     [<ValidateNotNullOrEmpty>]
     member val Mode: string = null with get, set
 
@@ -76,14 +105,29 @@ type OutObjectWrappedDUsCommand() =
             | "DUsAndProperties2" ->
                 io |> add
                 io |> addProps2
+            | "Types" ->
+                io |> addTypes
+            | "DUsAndThroughProperties" ->
+                io |> add
+                io |> throughProps
+            | "RawAndProperties3" ->
+                io |> input.Add
+                io |> addTypeAndProps
+            | "DUsAndProperties3" ->
+                io |> add
+                io |> addTypeAndProps
 
             | _ -> ()
 
     override __.EndProcessing() =
-        // print memory usage.
-        printfn "%20s Memory usage: %20s" __.Mode <| System.GC.GetTotalMemory(true).ToString("#,##0")
+        if typeAndProps.Count > 0 then
+            typeAndProps.Values |> Seq.collect id |> Seq.iter (props.Add >> ignore)
 
-// Raw          259,237,176
-// DUs          283,093,752
-// Properties    56,019,104
-// Both       1,922,577,960
+        // print memory usage.
+        let template = printfn  "%30s %10s %10s: %20s"
+        template __.Mode "Memory" "usage" <| System.GC.GetTotalMemory(true).ToString("#,##0")
+        template __.Mode "Input" "count" <| input.Count.ToString("#,##0")
+        template __.Mode "Properties" "count"<| props.Count.ToString("#,##0")
+        template __.Mode "Types" "count"<| types.Count.ToString("#,##0")
+        types |> Seq.map _.Name |> Seq.iter (template __.Mode "Types" "type")
+        props |> Seq.map string |> Seq.iter (template __.Mode "Properties" "properties")
