@@ -52,6 +52,11 @@ type OutObjectWrappedDUsCommand() =
                 // p.Name |> ignore
                 ()
 
+    let throughProps2 (io: PSObject) =
+        match io.BaseObject with
+        | _ ->
+            io.Properties |> ignore
+
     let addTypes (io: PSObject) =
         io.BaseObject.GetType() |> types.Add |> ignore
 
@@ -69,14 +74,16 @@ type OutObjectWrappedDUsCommand() =
         "Raw",
         "DUs",
         "Properties",
+        "Properties2",
         "RawAndProperties",
-        "DUsAndProperties","Properties2",
+        "DUsAndProperties",
         "RawAndProperties2",
         "DUsAndProperties2",
-        "Types",
-        "DUsAndThroughProperties",
         "RawAndProperties3",
-        "DUsAndProperties3"
+        "DUsAndProperties3",
+        "DUsAndThroughProperties",
+        "DUsAndThroughProperties2",
+        "Types"
     )>]
     [<ValidateNotNullOrEmpty>]
     member val Mode: string = null with get, set
@@ -92,31 +99,40 @@ type OutObjectWrappedDUsCommand() =
                 io |> add
             | "Properties" ->
                 io |> addProps
+            | "Properties2" ->
+                io |> addProps2
             | "RawAndProperties" ->
                 io |> input.Add
                 io |> addProps
             | "DUsAndProperties" ->
                 io |> add
                 io |> addProps
-            | "Properties2" ->
-                io |> addProps2
             | "RawAndProperties2" ->
                 io |> input.Add
                 io |> addProps2
             | "DUsAndProperties2" ->
                 io |> add
                 io |> addProps2
-            | "Types" ->
-                io |> addTypes
-            | "DUsAndThroughProperties" ->
-                io |> add
-                io |> throughProps
             | "RawAndProperties3" ->
                 io |> input.Add
                 io |> addTypeAndProps
             | "DUsAndProperties3" ->
                 io |> add
                 io |> addTypeAndProps
+            | "RawAndThroughProperties" ->
+                io |> input.Add
+                io |> throughProps
+            | "DUsAndThroughProperties" ->
+                io |> add
+                io |> throughProps
+            | "RawAndThroughProperties2" ->
+                io |> input.Add
+                io |> throughProps2
+            | "DUsAndThroughProperties2" ->
+                io |> add
+                io |> throughProps2
+            | "Types" ->
+                io |> addTypes
 
             | _ -> ()
 
