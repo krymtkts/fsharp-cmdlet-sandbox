@@ -39,6 +39,10 @@ if ($RunTest) {
             1..1000000 | ForEach-Object { [pscustomobject]@{Name = $_; Value = $_ } } | Out-ObjectWrappedDUs -Mode $_
             [GC]::Collect()
         }
+        if ($HashtableTest) {
+            1..1000000 | ForEach-Object { @{Name = $_; Value = $_ } } | Out-ObjectWrappedDUs -Mode $_
+            [GC]::Collect()
+        }
         Remove-Module wrap-dus-or-not -Force
         [GC]::Collect()
     }
@@ -49,6 +53,10 @@ if ($Types) {
     [GC]::Collect()
     if ($PSCustomObjectTest) {
         1..1000000 | ForEach-Object { [PSCustomObject]@{ Value = $_ } } | Out-ObjectWrappedDUs -Mode Types
+        [GC]::Collect()
+    }
+    if ($HashtableTest) {
+        1..1000000 | ForEach-Object { @{ Value = $_ } } | Out-ObjectWrappedDUs -Mode Types
         [GC]::Collect()
     }
     Remove-Module wrap-dus-or-not -Force

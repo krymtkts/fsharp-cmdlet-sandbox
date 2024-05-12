@@ -19,6 +19,13 @@ type OutObjectWrappedDUsCommand() =
     let types: System.Type Generic.HashSet = Generic.HashSet()
     let typeAndProps: Generic.Dictionary<string,string seq> = Generic.Dictionary()
 
+    let raw (io: PSObject) =
+        match io.BaseObject with
+        | :? IDictionary as dct ->
+            for d in Seq.cast<DictionaryEntry> dct do
+                d |> input.Add
+        | _ -> io |> input.Add
+
     let add (io: PSObject) =
         match io.BaseObject with
         | :? IDictionary as dct ->
@@ -30,16 +37,19 @@ type OutObjectWrappedDUsCommand() =
         match io.BaseObject with
         | :? IDictionary as dct ->
             let d = Seq.cast<DictionaryEntry> dct |> Seq.head
-            d |> PSObject.AsPSObject |> _.Properties |> Seq.iter (fun p -> p |> _.Name |> props.Add |> ignore)
+            for p in d |> PSObject.AsPSObject |> _.Properties do
+                p |> _.Name |> props.Add |> ignore
         | _ ->
             for p in io.Properties do
                 p |> _.Name |> props.Add |> ignore
 
     let addProps2 (io: PSObject) =
         match io.BaseObject with
-        // | :? IDictionary as dct ->
-        //     let d = Seq.cast<DictionaryEntry> dct |> Seq.head
-        //     d |> PSObject.AsPSObject |> _.Properties |> Seq.iter (fun p -> p |> _.Name |> props.Add |> ignore)
+        | :? IDictionary as dct ->
+            let d = Seq.cast<DictionaryEntry> dct |> Seq.head
+            for p in d |> PSObject.AsPSObject |> _.Properties do
+                if not (props.Contains p.Name) then
+                    p |> _.Name |> props.Add |> ignore
         | _ ->
             for p in io.Properties do
                 if not (props.Contains p.Name) then
@@ -47,13 +57,20 @@ type OutObjectWrappedDUsCommand() =
 
     let throughProps (io: PSObject) =
         match io.BaseObject with
+        | :? IDictionary as dct ->
+            let d = Seq.cast<DictionaryEntry> dct |> Seq.head
+            for _ in d |> PSObject.AsPSObject |> _.Properties do
+                ()
         | _ ->
-            for p in io.Properties do
+            for _ in io.Properties do
                 // p.Name |> ignore
                 ()
 
     let throughProps2 (io: PSObject) =
         match io.BaseObject with
+        | :? IDictionary as dct ->
+            let d = Seq.cast<DictionaryEntry> dct |> Seq.head
+            d |> PSObject.AsPSObject |> _.Properties |> ignore
         | _ ->
             io.Properties |> ignore
 
@@ -63,8 +80,14 @@ type OutObjectWrappedDUsCommand() =
     let addTypeAndProps (io: PSObject) =
         let t = io.BaseObject.GetType().FullName
         if t |> typeAndProps.ContainsKey  |> not then
-            let props = io.Properties |> Seq.map (fun p -> p.Name)
-            typeAndProps.Add (t, props) |> ignore
+            match io.BaseObject with
+            | :? IDictionary as dct ->
+                let d = Seq.cast<DictionaryEntry> dct |> Seq.head
+                let props = d |> PSObject.AsPSObject |> _.Properties |> Seq.map (fun p -> p.Name)
+                typeAndProps.Add (t, props) |> ignore
+            | _ ->
+                let props = io.Properties |> Seq.map (fun p -> p.Name)
+                typeAndProps.Add (t, props) |> ignore
 
     [<Parameter(Position = 0, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)>]
     member val InputObject: PSObject [] = [||] with get, set
