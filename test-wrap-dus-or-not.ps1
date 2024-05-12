@@ -38,13 +38,16 @@ if ($RunTest) {
         Write-Host "Mode: $_ -----------------------------------------------------------------------"
         $Mode = $_
         Import-Module .\src\wrap-dus-or-not\bin\Debug\*\publish\*.psd1 -Force
+        Write-Host "Mode: $_ Raw -------------------------------------------------------------------"
         Measure-Command { $raw | Out-ObjectWrappedDUs -Mode $Mode }
         [GC]::Collect()
         if ($PSCustomObjectTest) {
+            Write-Host "Mode: $_ PSC -------------------------------------------------------------------"
             Measure-Command { $psc | Out-ObjectWrappedDUs -Mode $Mode }
             [GC]::Collect()
         }
         if ($HashtableTest) {
+            Write-Host "Mode: $_ HST -------------------------------------------------------------------"
             Measure-Command { $hst | Out-ObjectWrappedDUs -Mode $Mode }
             [GC]::Collect()
         }
@@ -54,13 +57,16 @@ if ($RunTest) {
 }
 if ($Types) {
     Import-Module .\src\wrap-dus-or-not\bin\Debug\*\publish\*.psd1 -Force
-    $raw | Out-ObjectWrappedDUs -Mode Types
+    Write-Host "Mode: $_ -----------------------------------------------------------------------"
+    Measure-Command { $raw | Out-ObjectWrappedDUs -Mode Types }
     [GC]::Collect()
     if ($PSCustomObjectTest) {
+        Write-Host "Mode: $_ PSC -------------------------------------------------------------------"
         Measure-Command { $psc | Out-ObjectWrappedDUs -Mode Types }
         [GC]::Collect()
     }
     if ($HashtableTest) {
+        Write-Host "Mode: $_ HST -------------------------------------------------------------------"
         Measure-Command { $hst | Out-ObjectWrappedDUs -Mode Types }
         [GC]::Collect()
     }
