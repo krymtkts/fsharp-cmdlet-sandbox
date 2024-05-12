@@ -18,8 +18,12 @@ dotnet clean
 dotnet publish
 
 $raw = 1..1000000
-$psc = $raw | ForEach-Object { [pscustomobject]@{Name = $_; Value = $_ } }
-$hst = $hst
+if ($PSCustomObjectTest) {
+    $psc = $raw | ForEach-Object { [pscustomobject]@{Name = $_; Value = $_ } }
+}
+if ($HashtableTest) {
+    $hst = $raw | ForEach-Object { @{Name = $_; Value = $_ } }
+}
 if ($RunTest) {
     @(
         'Raw'

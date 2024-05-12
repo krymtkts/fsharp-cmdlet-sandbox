@@ -89,6 +89,9 @@ type OutObjectWrappedDUsCommand() =
                 let props = io.Properties |> Seq.map (fun p -> p.Name)
                 typeAndProps.Add (t, props) |> ignore
 
+    let mutable startMemory = -1L
+
+
     [<Parameter(Position = 0, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)>]
     member val InputObject: PSObject [] = [||] with get, set
 
@@ -111,7 +114,8 @@ type OutObjectWrappedDUsCommand() =
     [<ValidateNotNullOrEmpty>]
     member val Mode: string = null with get, set
 
-    override __.BeginProcessing() = base.BeginProcessing()
+    override __.BeginProcessing() =
+        startMemory <- System.GC.GetTotalMemory(true)
 
     override __.ProcessRecord() =
         for io in __.InputObject do
@@ -165,7 +169,9 @@ type OutObjectWrappedDUsCommand() =
 
         // print memory usage.
         let template = printfn  "%30s %10s %10s: %20s"
-        template __.Mode "Memory" "usage" <| System.GC.GetTotalMemory(true).ToString("#,##0")
+        let memory = System.GC.GetTotalMemory(true)
+        template __.Mode "Memory" "usage" <| memory.ToString("#,##0")
+        template __.Mode "Memory" "usage" <| (memory - startMemory).ToString("#,##0")
         template __.Mode "Input" "count" <| input.Count.ToString("#,##0")
         template __.Mode "Properties" "count"<| props.Count.ToString("#,##0")
         template __.Mode "Types" "count"<| types.Count.ToString("#,##0")
