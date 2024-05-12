@@ -32,15 +32,16 @@ if ($RunTest) {
         'DUsAndThroughProperties'
         'DUsAndThroughProperties2'
     ) | ForEach-Object {
+        $Mode = $_
         Import-Module .\src\wrap-dus-or-not\bin\Debug\*\publish\*.psd1 -Force
-        1..1000000 | Out-ObjectWrappedDUs -Mode $_
+        Measure-Command { 1..1000000 | Out-ObjectWrappedDUs -Mode $Mode }
         [GC]::Collect()
         if ($PSCustomObjectTest) {
-            1..1000000 | ForEach-Object { [pscustomobject]@{Name = $_; Value = $_ } } | Out-ObjectWrappedDUs -Mode $_
+            Measure-Command { 1..1000000 | ForEach-Object { [pscustomobject]@{Name = $_; Value = $_ } } | Out-ObjectWrappedDUs -Mode $Mode }
             [GC]::Collect()
         }
         if ($HashtableTest) {
-            1..1000000 | ForEach-Object { @{Name = $_; Value = $_ } } | Out-ObjectWrappedDUs -Mode $_
+            Measure-Command { 1..1000000 | ForEach-Object { @{Name = $_; Value = $_ } } | Out-ObjectWrappedDUs -Mode $Mode }
             [GC]::Collect()
         }
         Remove-Module wrap-dus-or-not -Force
@@ -52,11 +53,11 @@ if ($Types) {
     1..1000000 | Out-ObjectWrappedDUs -Mode Types
     [GC]::Collect()
     if ($PSCustomObjectTest) {
-        1..1000000 | ForEach-Object { [PSCustomObject]@{ Value = $_ } } | Out-ObjectWrappedDUs -Mode Types
+        Measure-Command { 1..1000000 | ForEach-Object { [PSCustomObject]@{ Value = $_ } } | Out-ObjectWrappedDUs -Mode Types }
         [GC]::Collect()
     }
     if ($HashtableTest) {
-        1..1000000 | ForEach-Object { @{ Value = $_ } } | Out-ObjectWrappedDUs -Mode Types
+        Measure-Command { 1..1000000 | ForEach-Object { @{ Value = $_ } } | Out-ObjectWrappedDUs -Mode Types }
         [GC]::Collect()
     }
     Remove-Module wrap-dus-or-not -Force
