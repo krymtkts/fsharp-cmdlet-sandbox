@@ -9,6 +9,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "prerelease-test-module", "s
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "wrap-dus-or-not", "src\wrap-dus-or-not\wrap-dus-or-not.fsproj", "{03EDA563-ECB6-433A-9E60-663F5DB5DFDE}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "async-render", "src\async-render\async-render.fsproj", "{B5827A4C-2FF2-4847-8771-4CE6E41DEA4D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,9 +28,14 @@ Global
 		{03EDA563-ECB6-433A-9E60-663F5DB5DFDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{03EDA563-ECB6-433A-9E60-663F5DB5DFDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{03EDA563-ECB6-433A-9E60-663F5DB5DFDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5827A4C-2FF2-4847-8771-4CE6E41DEA4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5827A4C-2FF2-4847-8771-4CE6E41DEA4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5827A4C-2FF2-4847-8771-4CE6E41DEA4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5827A4C-2FF2-4847-8771-4CE6E41DEA4D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{52893116-614F-4528-9471-B7681E14691C} = {C5BFE1F4-3D36-4D8C-9B7C-5D6738DB6E0F}
 		{03EDA563-ECB6-433A-9E60-663F5DB5DFDE} = {C5BFE1F4-3D36-4D8C-9B7C-5D6738DB6E0F}
+		{B5827A4C-2FF2-4847-8771-4CE6E41DEA4D} = {C5BFE1F4-3D36-4D8C-9B7C-5D6738DB6E0F}
 	EndGlobalSection
 EndGlobal
