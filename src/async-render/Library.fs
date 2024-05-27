@@ -1,11 +1,10 @@
 ﻿namespace async_render
 
 open System
-open System.Threading
 open System.Management.Automation
-
 open System.Reflection
-
+open System.Threading
+open System.Threading.Tasks
 
 module Error =
     let stopUpstreamCommandsException (cmdlet: Cmdlet) =
@@ -13,6 +12,7 @@ module Error =
             Assembly
                 .GetAssembly(typeof<PSCmdlet>)
                 .GetType("System.Management.Automation.StopUpstreamCommandsException")
+
         let stopUpstreamCommandsException =
             Activator.CreateInstance(
                 stopUpstreamCommandsExceptionType,
@@ -58,17 +58,19 @@ type OutGridAsyncCommand() =
         async {
             let mutable input = ""
 
-            while true do
+            while not token.IsCancellationRequested do
                 printfn "==========While END"
                 input <- Console.ReadLine()
                 Console.WriteLine(input)
 
                 if input = "END" then
                     printTimeCancellationTokenSource.Cancel()
+
+            Console.WriteLine("While END done")
         }
 
-    let mutable printTimeTask: Async<unit> option = None
-    let mutable readInputTask: Async<unit> option = None
+    let mutable printTimeTask: Task<unit> option = None
+    let mutable readInputTask: Task<unit> option = None
 
     [<Parameter(Position = 0, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)>]
     member val InputObject: PSObject [] = [||] with get, set
@@ -76,8 +78,10 @@ type OutGridAsyncCommand() =
     override __.BeginProcessing() =
         printfn "==========Begin processing"
 
-        printTime () |> Async.Start
-        readInputAsync () |> Async.Start
+        printTimeTask <- printTime () |> Async.StartAsTask |> Some
+        readInputTask <- readInputAsync () |> Async.StartAsTask |> Some
+
+        printfn "==========Begin processing done"
 
     override __.ProcessRecord() =
         printfn "==========Processing record"
@@ -92,4 +96,13 @@ type OutGridAsyncCommand() =
             printfn "==========Add %A" o
             o |> input.Add
 
-    override __.EndProcessing() = printfn "==========End processing"
+    override __.EndProcessing() =
+        printfn "==========End processing"
+
+        [ printTimeTask; readInputTask ]
+        |> Seq.choose id
+        |> Seq.cast<Task>
+        |> Array.ofSeq
+        |> Task.WaitAll
+
+        printfn "==========End processing done"
