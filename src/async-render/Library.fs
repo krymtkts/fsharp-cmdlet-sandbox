@@ -28,12 +28,22 @@ module Error =
 
         stopUpstreamCommandsException
 
+type ListWithEvent<'T>() =
+    inherit Collections.Generic.List<'T>()
+    let event = new Event<'T>()
+
+    member _.AddAndTrigger item =
+        base.Add item
+        event.Trigger item
+
+    member _.ItemAdded = event.Publish
+
 [<Cmdlet(VerbsData.Out, "GridAsync")>]
 [<OutputType(typeof<PSObject>)>]
 type OutGridAsyncCommand() =
     inherit PSCmdlet()
 
-    let input = Collections.Generic.List<PSObject>()
+    let input = ListWithEvent<PSObject>()
 
     let printTimeCancellationTokenSource = new CancellationTokenSource()
     let token = printTimeCancellationTokenSource.Token
@@ -41,18 +51,23 @@ type OutGridAsyncCommand() =
     let printTime () =
         let mutable i = 0
 
-        async {
-            while not token.IsCancellationRequested do
-                printfn "==========Print time task"
+        // async {
+        //     while not token.IsCancellationRequested do
+        //         printfn "==========Print time task"
 
-                for ip in input.GetRange(i, input.Count - i) do
-                    Console.WriteLine(ip)
-                    i <- i + 1
+        //         for ip in input.GetRange(i, input.Count - i) do
+        //             Console.WriteLine(ip)
+        //             i <- i + 1
 
-                do! Async.Sleep(1000)
+        //         do! Async.Sleep(1000)
 
-            Console.WriteLine("Print time task cancelled")
-        }
+        //     Console.WriteLine("Print time task cancelled")
+        // }
+        printfn "==========Set print time task"
+
+        input.ItemAdded.Add (fun item ->
+            Console.WriteLine($"item => {item}")
+            i <- i + 1)
 
     let readInputAsync () =
         async {
@@ -78,7 +93,8 @@ type OutGridAsyncCommand() =
     override __.BeginProcessing() =
         printfn "==========Begin processing"
 
-        printTimeTask <- printTime () |> Async.StartAsTask |> Some
+        // printTimeTask <- printTime () |> Async.StartAsTask |> Some
+        printTime ()
         readInputTask <- readInputAsync () |> Async.StartAsTask |> Some
 
         printfn "==========Begin processing done"
@@ -94,7 +110,7 @@ type OutGridAsyncCommand() =
                 Error.stopUpstreamCommandsException (__) |> raise
 
             printfn "==========Add %A" o
-            o |> input.Add
+            o |> input.AddAndTrigger
 
     override __.EndProcessing() =
         printfn "==========End processing"
