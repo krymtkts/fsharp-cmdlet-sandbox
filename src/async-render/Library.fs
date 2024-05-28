@@ -65,7 +65,8 @@ type OutGridAsyncCommand() =
 
         //     Console.WriteLine("Print time task cancelled")
         // }
-        printfn "==========Set print time task"
+        printfn "==========Set print time task current thread %A" Thread.CurrentThread.ManagedThreadId
+
 
         input.CollectionChanged.Add (fun item ->
             match item.Action with
@@ -73,17 +74,37 @@ type OutGridAsyncCommand() =
                 if not silent then
                     let item = input.[i]
                     item |> render
-                    printfn "==========printed via render"
+                    printfn "==========printed via render current thread %A" Thread.CurrentThread.ManagedThreadId
             | _ -> ()
 
             i <- i + 1)
+
+    [<TailCall>]
+    let rec read (acc: ConsoleKeyInfo list) =
+        Console.KeyAvailable
+        |> function
+            | true ->
+                let acc = Console.ReadKey true :: acc
+                read acc
+            | _ ->
+                match acc with
+                | [] ->
+                    Thread.Sleep 10
+                    read acc
+                | _ -> List.rev acc
+
+    let readLine () =
+        Async.FromContinuations(fun (cont, _, _) -> read [] |> cont)
+        |> Async.RunSynchronously
 
     let readInputAsync () =
         async {
             while not token.IsCancellationRequested do
                 try
-                    printfn "==========While END"
-                    let item = Console.ReadLine()
+                    printfn "==========While END current thread %A" Thread.CurrentThread.ManagedThreadId
+
+                    let item = readLine () |> List.map _.KeyChar |> String.Concat
+
                     item |> input.Add
 
                     if item = "END" then
@@ -106,10 +127,11 @@ type OutGridAsyncCommand() =
     member val Silent: SwitchParameter = SwitchParameter false with get, set
 
     member __.Render(item: PSObject) =
+        // TODO: BAD PRACTICE. this is unsafe.
         Runspace.DefaultRunspace <- originalRunspace
-
+        printfn "==========Render current thread %A" Thread.CurrentThread.ManagedThreadId
         __.InvokeCommand.InvokeScript(
-            @"""input->$input""| Write-Host",
+            @"$input | Format-Table | Out-String | Write-Host",
             true,
             PipelineResultTypes.None,
             [| item |],
@@ -127,6 +149,8 @@ type OutGridAsyncCommand() =
         )
         |> ignore
 
+        printfn "synchro: %A" SynchronizationContext.Current
+
         // printTimeTask <- printTime () |> Async.StartAsTask |> Some
         printTime (__.Silent.IsPresent, __.Render)
         readInputTask <- readInputAsync () |> Async.StartAsTask |> Some
@@ -135,7 +159,7 @@ type OutGridAsyncCommand() =
 
     override __.ProcessRecord() =
         if not __.Silent.IsPresent then
-            printfn "==========Processing record"
+            printfn "==========Processing record current thread %A" Thread.CurrentThread.ManagedThreadId
 
         for o in __.InputObject do
             if token.IsCancellationRequested then
