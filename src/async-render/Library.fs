@@ -48,7 +48,7 @@ type OutGridAsyncCommand() =
     let printTimeCancellationTokenSource = new CancellationTokenSource()
     let token = printTimeCancellationTokenSource.Token
 
-    let printTime () =
+    let printTime (silent: bool) =
         let mutable i = 0
 
         // async {
@@ -66,7 +66,9 @@ type OutGridAsyncCommand() =
         printfn "==========Set print time task"
 
         input.ItemAdded.Add (fun item ->
-            Console.WriteLine($"item => {item}")
+            if not silent then
+                Console.WriteLine($"item => {item}")
+
             i <- i + 1)
 
     let readInputAsync () =
@@ -90,26 +92,33 @@ type OutGridAsyncCommand() =
     [<Parameter(Position = 0, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)>]
     member val InputObject: PSObject [] = [||] with get, set
 
+    [<Parameter(Position = 0, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)>]
+    member val Silent: SwitchParameter = SwitchParameter false with get, set
+
     override __.BeginProcessing() =
         printfn "==========Begin processing"
 
         // printTimeTask <- printTime () |> Async.StartAsTask |> Some
-        printTime ()
+        printTime (__.Silent.IsPresent)
         readInputTask <- readInputAsync () |> Async.StartAsTask |> Some
 
         printfn "==========Begin processing done"
 
     override __.ProcessRecord() =
-        printfn "==========Processing record"
+        if not __.Silent.IsPresent then
+            printfn "==========Processing record"
 
         for o in __.InputObject do
             if token.IsCancellationRequested then
                 Console.WriteLine("Stop processing")
+
                 __.EndProcessing()
 
                 Error.stopUpstreamCommandsException (__) |> raise
 
-            printfn "==========Add %A" o
+            if not __.Silent.IsPresent then
+                printfn "==========Add %A" o
+
             o |> input.AddAndTrigger
 
     override __.EndProcessing() =
