@@ -1,9 +1,9 @@
 [CmdletBinding()]
 param (
     [Parameter(Mandatory)]
-    [ValidateSet('Soft', 'Hard')]
+    [ValidateSet('Easy', 'Hard')]
     [string]
-    $Mode = 'Soft'
+    $Mode = 'Easy'
 )
 
 dotnet publish
@@ -11,7 +11,7 @@ Import-Module .\src\async-render\bin\Debug\net7.0\publish\async-render.psd1 -For
 . .\scripts\Invoke-InfiniteLoop.ps1
 
 switch ($Mode) {
-    'Soft' {
+    'Easy' {
         Invoke-InfiniteLoop -ScriptBlock { $global:a += 1; $a; Start-Sleep -Seconds 1 } | Out-GridAsync
     }
     'Hard' {
