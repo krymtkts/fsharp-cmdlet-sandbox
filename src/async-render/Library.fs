@@ -5,6 +5,7 @@ open System.Management.Automation
 open System.Reflection
 open System.Threading
 open System.Threading.Tasks
+open System.Management.Automation.Runspaces
 
 module Error =
     let stopUpstreamCommandsException (cmdlet: Cmdlet) =
@@ -43,12 +44,13 @@ type ListWithEvent<'T>() =
 type OutGridAsyncCommand() =
     inherit PSCmdlet()
 
-    let input = ListWithEvent<PSObject>()
+    // let input = ListWithEvent<PSObject>()
+    let input = Collections.ObjectModel.ObservableCollection<PSObject>()
 
     let printTimeCancellationTokenSource = new CancellationTokenSource()
     let token = printTimeCancellationTokenSource.Token
 
-    let printTime (silent: bool) =
+    let printTime (silent: bool, render: PSObject -> unit) =
         let mutable i = 0
 
         // async {
@@ -65,23 +67,29 @@ type OutGridAsyncCommand() =
         // }
         printfn "==========Set print time task"
 
-        input.ItemAdded.Add (fun item ->
-            if not silent then
-                Console.WriteLine($"item => {item}")
+        input.CollectionChanged.Add (fun item ->
+            match item.Action with
+            | Collections.Specialized.NotifyCollectionChangedAction.Add ->
+                if not silent then
+                    let item = input.[i]
+                    item |> render
+                    printfn "==========printed via render"
+            | _ -> ()
 
             i <- i + 1)
 
     let readInputAsync () =
         async {
-            let mutable input = ""
-
             while not token.IsCancellationRequested do
-                printfn "==========While END"
-                input <- Console.ReadLine()
-                Console.WriteLine(input)
+                try
+                    printfn "==========While END"
+                    let item = Console.ReadLine()
+                    item |> input.Add
 
-                if input = "END" then
-                    printTimeCancellationTokenSource.Cancel()
+                    if item = "END" then
+                        printTimeCancellationTokenSource.Cancel()
+                with
+                | e -> Console.WriteLine($"BOOM! {e.Message}")
 
             Console.WriteLine("While END done")
         }
@@ -89,17 +97,38 @@ type OutGridAsyncCommand() =
     let mutable printTimeTask: Task<unit> option = None
     let mutable readInputTask: Task<unit> option = None
 
+    let originalRunspace = Runspace.DefaultRunspace
+
     [<Parameter(Position = 0, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)>]
     member val InputObject: PSObject [] = [||] with get, set
 
     [<Parameter(Position = 0, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)>]
     member val Silent: SwitchParameter = SwitchParameter false with get, set
 
+    member __.Render(item: PSObject) =
+        Runspace.DefaultRunspace <- originalRunspace
+
+        __.InvokeCommand.InvokeScript(
+            @"""input->$input""| Write-Host",
+            true,
+            PipelineResultTypes.None,
+            [| item |],
+            null
+        )
+        |> ignore
+
     override __.BeginProcessing() =
-        printfn "==========Begin processing"
+        __.InvokeCommand.InvokeScript(
+            "'==========Begin processing' | Write-Host",
+            true,
+            PipelineResultTypes.Output,
+            null,
+            null
+        )
+        |> ignore
 
         // printTimeTask <- printTime () |> Async.StartAsTask |> Some
-        printTime (__.Silent.IsPresent)
+        printTime (__.Silent.IsPresent, __.Render)
         readInputTask <- readInputAsync () |> Async.StartAsTask |> Some
 
         printfn "==========Begin processing done"
@@ -119,7 +148,7 @@ type OutGridAsyncCommand() =
             if not __.Silent.IsPresent then
                 printfn "==========Add %A" o
 
-            o |> input.AddAndTrigger
+            o |> input.Add
 
     override __.EndProcessing() =
         printfn "==========End processing"
