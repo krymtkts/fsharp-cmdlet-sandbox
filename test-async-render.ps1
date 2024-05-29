@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param (
     [Parameter(Mandatory)]
-    [ValidateSet('Easy', 'Hard')]
+    [ValidateSet('Easy', 'Hard', 'None')]
     [string]
     $Mode = 'Easy'
 )
@@ -17,7 +17,10 @@ switch ($Mode) {
     'Hard' {
         Invoke-InfiniteLoop -ScriptBlock { $global:a += 1; $a; Start-Sleep -Milliseconds 10 } | Out-GridAsync -Silent
     }
-    default {
+    'None' {
+
+    }
+    'default' {
         throw "Invalid mode: $Mode"
     }
 }
