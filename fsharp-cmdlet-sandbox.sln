@@ -11,6 +11,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "wrap-dus-or-not", "src\wrap
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "async-render", "src\async-render\async-render.fsproj", "{B5827A4C-2FF2-4847-8771-4CE6E41DEA4D}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "fast-search", "src\fast-search\fast-search.fsproj", "{03DDC027-1A79-4A1A-A2E6-5B92FD0D93A1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,10 +34,15 @@ Global
 		{B5827A4C-2FF2-4847-8771-4CE6E41DEA4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B5827A4C-2FF2-4847-8771-4CE6E41DEA4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B5827A4C-2FF2-4847-8771-4CE6E41DEA4D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03DDC027-1A79-4A1A-A2E6-5B92FD0D93A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03DDC027-1A79-4A1A-A2E6-5B92FD0D93A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03DDC027-1A79-4A1A-A2E6-5B92FD0D93A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03DDC027-1A79-4A1A-A2E6-5B92FD0D93A1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{52893116-614F-4528-9471-B7681E14691C} = {C5BFE1F4-3D36-4D8C-9B7C-5D6738DB6E0F}
 		{03EDA563-ECB6-433A-9E60-663F5DB5DFDE} = {C5BFE1F4-3D36-4D8C-9B7C-5D6738DB6E0F}
 		{B5827A4C-2FF2-4847-8771-4CE6E41DEA4D} = {C5BFE1F4-3D36-4D8C-9B7C-5D6738DB6E0F}
+		{03DDC027-1A79-4A1A-A2E6-5B92FD0D93A1} = {C5BFE1F4-3D36-4D8C-9B7C-5D6738DB6E0F}
 	EndGlobalSection
 EndGlobal
