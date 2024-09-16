@@ -55,10 +55,10 @@ type SelectObjectTestCommand() =
           matches "d"
           matches "5" ]
 
-    let buildExpr conditions =
+    let buildExpr conditions op =
         conditions
         |> List.rev
-        |> List.reduce (fun acc x -> fun e -> (||) (acc e) (x e))
+        |> List.reduce (fun acc x -> fun e -> op (acc e) (x e))
 
 
     (*
@@ -76,15 +76,20 @@ type SelectObjectTestCommand() =
         if expr4 x then xxx else false
         if expr5 x then true else false
     *)
-    let generateExpr conditions =
+    let generateExpr conditions op =
         let xVar = Var("x", typeof<string>)
         let x = xVar |> Expr.Var |> Expr.Cast<string>
+
+        let combination =
+            match op with
+            | Operator.And -> fun c acc -> Expr.IfThenElse(<@ c %x @>, acc, <@ false @>)
+            | Operator.Or -> fun c acc -> Expr.IfThenElse(<@ c %x @>, <@ true @>, acc)
 
         let rec recBody acc conditions =
             match conditions with
             | [] -> acc
             | condition :: conditions ->
-                let acc = Expr.IfThenElse(<@ condition %x @>, <@ true @>, acc)
+                let acc = combination condition acc
                 recBody acc conditions
 
         let body =
@@ -102,6 +107,11 @@ type SelectObjectTestCommand() =
 
     let mutable test = fun _ -> false
 
+    let getOperatorForLambda op =
+        match op with
+        | Operator.And -> (&&)
+        | Operator.Or -> (||)
+
     [<Parameter(Position = 0, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)>]
     member val InputObject: PSObject [] = [||] with get, set
 
@@ -110,7 +120,7 @@ type SelectObjectTestCommand() =
     member val Mode = string Mode.Lambda with get, set
 
     [<Parameter>]
-    [<ValidateSet("And")>]
+    [<ValidateSet("And", "Or")>]
     member val Operator = string Operator.And with get, set
 
     override __.BeginProcessing() =
@@ -119,8 +129,8 @@ type SelectObjectTestCommand() =
         w.Start()
 
         match __.Mode |> Mode.fromString, __.Operator |> Operator.fromString with
-        | Mode.CodeQuotation, o -> test <- generateExpr conditions
-        | Mode.Lambda, o -> test <- buildExpr conditions
+        | Mode.CodeQuotation, o -> test <- generateExpr conditions o
+        | Mode.Lambda, o -> test <- buildExpr conditions <| getOperatorForLambda o
 
         w.Stop()
 
