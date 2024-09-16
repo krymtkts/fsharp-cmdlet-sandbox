@@ -129,8 +129,8 @@ type SelectObjectTestCommand() =
         w.Start()
 
         match __.Mode |> Mode.fromString, __.Operator |> Operator.fromString with
-        | Mode.CodeQuotation, o -> test <- generateExpr conditions o
-        | Mode.Lambda, o -> test <- buildExpr conditions <| getOperatorForLambda o
+        | Mode.CodeQuotation, o -> test <- generateExpr conditions o // NOTE: it takes over 100ms at first time.
+        | Mode.Lambda, o -> test <- buildExpr conditions <| getOperatorForLambda o // NOTE: extremely fast.
 
         w.Stop()
 
