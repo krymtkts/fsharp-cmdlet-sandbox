@@ -6,6 +6,7 @@ open System.Text.RegularExpressions
 
 open FSharp.Linq.RuntimeHelpers
 open Microsoft.FSharp.Quotations
+open System.Diagnostics
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -114,10 +115,16 @@ type SelectObjectTestCommand() =
 
     override __.BeginProcessing() =
 
+        let w = Stopwatch()
+        w.Start()
 
         match __.Mode |> Mode.fromString, __.Operator |> Operator.fromString with
         | Mode.CodeQuotation, o -> test <- generateExpr conditions
         | Mode.Lambda, o -> test <- buildExpr conditions
+
+        w.Stop()
+
+        printfn $"expression generation: %d{w.ElapsedMilliseconds}ms"
 
     override __.ProcessRecord() =
         for io in __.InputObject do
