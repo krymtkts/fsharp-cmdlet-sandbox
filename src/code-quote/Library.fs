@@ -123,7 +123,14 @@ type SelectObjectTestCommand() =
     [<ValidateSet("And", "Or")>]
     member val Operator = string Operator.And with get, set
 
+    [<Parameter>]
+    member val Size = 0 with get, set
+
     override __.BeginProcessing() =
+        if __.Size <= 0 then
+            __.Size <- conditions |> List.length
+
+        let conditions = conditions |> List.truncate __.Size
 
         let w = Stopwatch()
         w.Start()
