@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Nullable>enable</Nullable>
-    <OutputType>Exe</OutputType>
+    <!-- <OutputType>Exe</OutputType> -->
     <RootNamespace>fsunit7</RootNamespace>
     <TargetFramework>net9.0</TargetFramework>
     <!--
@@ -29,6 +29,24 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit.v3" Version="1.0.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.0.0" />
+    <!--
+      TODO: cannot restore FsUnit.xUnit 7.0.0
+      Restore complete (0.6s)
+        fsunit7 succeeded with 2 warning(s) (2.0s) → src\fsunit7\bin\Debug\net9.0\fsunit7.dll
+          C:\Program Files\dotnet\sdk\9.0.101\Microsoft.Common.CurrentVersion.targets(2413,5): warning MSB3246: Resolved file has a bad image, no metadata, or is otherwise inaccessible. PE image does not have metadata. PE image does not have metadata.
+          C:\Program Files\dotnet\sdk\9.0.101\Microsoft.Common.CurrentVersion.targets(2413,5): warning MSB3243: No way to resolve conflict between "FsUnit.Xunit, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" and "FsUnit.Xunit". Choosing "FsUnit.Xunit, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" arbitrarily.
+        fsunit7 test failed with 1 error(s) (0.0s)
+          C:\Users\takatoshi\dev\github.com\krymtkts\fsharp-cmdlet-sandbox\src\fsunit7\bin\Debug\net9.0\fsunit7.dll : error run failed:
+            Tests failed: Error:
+              An assembly specified in the application dependencies manifest (fsunit7.deps.json) has already been found but with a different
+            file extension:
+                package: 'FsUnit.xUnit', version: '7.0.0'
+                path: 'lib/net6.0/FsUnit.Xunit.exe'
+                previously found assembly: 'C:\Users\takatoshi\dev\github.com\krymtkts\fsharp-cmdlet-sandbox\src\fsunit7\bin\Debug\net9.0\Fs
+            Unit.Xunit.dll'
+
+    -->
+    <PackageReference Include="FsUnit.xUnit" Version="7.0.0" />
   </ItemGroup>
 
 </Project>
