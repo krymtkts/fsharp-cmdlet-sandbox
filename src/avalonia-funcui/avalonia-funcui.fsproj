@@ -6,6 +6,9 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- NOTE: to remove localized dlls from the bundle. -->
     <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
+
+    <PublishDir>./publish/avalonia-funcui</PublishDir>
+
   </PropertyGroup>
 
   <ItemGroup>

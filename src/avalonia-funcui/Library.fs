@@ -86,6 +86,8 @@ type SelectPocofCommand() =
     override __.ProcessRecord() = printfn "Hello from AvaloniaFuncUI"
 
     override __.EndProcessing() =
+        // TODO: PowerShell cmdlet cannot resolve libSkiaSharp.dll automatically,
+        // TODO: dirty workaround 1 is add the path for libSkiaSharp.dll to PATH environment variable
         AppBuilder
             .Configure<App>()
             .UsePlatformDetect()
