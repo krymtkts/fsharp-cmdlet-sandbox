@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/async-render/async-render.fsproj" />
+    <Project Path="src/code-quote/code-quote.fsproj" />
+    <Project Path="src/fast-search/fast-search.fsproj" />
+    <Project Path="src/fsunit7/fsunit7.fsproj" />
+    <Project Path="src/prerelease-test-module/prerelease-test-module.fsproj" />
+    <Project Path="src/wrap-dus-or-not/wrap-dus-or-not.fsproj" />
+  </Folder>
+</Solution>
