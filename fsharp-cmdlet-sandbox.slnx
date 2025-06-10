@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/async-render/async-render.fsproj" />
+    <Project Path="src/avalonia-funcui/avalonia-funcui.fsproj" />
     <Project Path="src/code-quote/code-quote.fsproj" />
     <Project Path="src/fast-search/fast-search.fsproj" />
     <Project Path="src/fsunit7/fsunit7.fsproj" />
