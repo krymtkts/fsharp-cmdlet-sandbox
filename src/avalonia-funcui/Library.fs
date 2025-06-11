@@ -1,6 +1,7 @@
 ﻿namespace avalonia_funcui
 
 open System.Management.Automation
+open System.Runtime.InteropServices
 
 open Avalonia
 open Avalonia.Controls
@@ -86,8 +87,51 @@ type SelectPocofCommand() =
     override __.ProcessRecord() = printfn "Hello from AvaloniaFuncUI"
 
     override __.EndProcessing() =
-        // TODO: PowerShell cmdlet cannot resolve libSkiaSharp.dll automatically,
-        // TODO: dirty workaround 1 is add the path for libSkiaSharp.dll to PATH environment variable
+        printfn
+            $"OSArchitecture: {RuntimeInformation.OSArchitecture} OSDescription: {RuntimeInformation.OSDescription} FrameworkDescription: {RuntimeInformation.FrameworkDescription} ProcessArchitecture: {RuntimeInformation.ProcessArchitecture} RuntimeIdentifier: {RuntimeInformation.RuntimeIdentifier}"
+
+        printfn "EndProcessing called"
+
+        let moduleDir =
+            System.IO.Path.GetDirectoryName(
+                System
+                    .Reflection
+                    .Assembly
+                    .GetExecutingAssembly()
+                    .Location
+            )
+
+        printfn "Module directory: %s" moduleDir
+
+        if RuntimeInformation.IsOSPlatform(OSPlatform.Windows) then
+            [ $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/av_libglesv2.dll"
+              $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/libHarfBuzzSharp.dll"
+              $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/libSkiaSharp.dll" ]
+        elif RuntimeInformation.IsOSPlatform(OSPlatform.OSX) then
+            [ $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/libAvaloniaNative.dylib"
+              $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/libHarfBuzzSharp.dylib"
+              $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/libSkiaSharp.dylib" ]
+        elif RuntimeInformation.IsOSPlatform(OSPlatform.Linux) then
+            [ $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/libHarfBuzzSharp.so"
+              $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/libSkiaSharp.so" ]
+        else
+            List.empty
+        |> List.iter (fun skiaDll ->
+            let skiaPath = System.IO.Path.Combine(moduleDir, skiaDll)
+
+            try
+                printfn "Loading SkiaSharp library from: %s" skiaPath
+
+                if System.IO.File.Exists(skiaPath) then
+                    printfn "SkiaSharp library found."
+                    NativeLibrary.Load(skiaPath) |> ignore
+            with
+            | e ->
+                printfn "Failed to load SkiaSharp library: %s" e.Message
+                ())
+
+        printfn "Starting Avalonia FuncUI application..."
+
         AppBuilder
             .Configure<App>()
             .UsePlatformDetect()
