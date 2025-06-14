@@ -69,20 +69,33 @@ type App() =
     override this.Initialize() =
         this.Styles.Add(FluentTheme())
         this.RequestedThemeVariant <- Styling.ThemeVariant.Dark
+        printfn "Application initialized with FluentTheme and Dark variant."
 
     override this.OnFrameworkInitializationCompleted() =
         match this.ApplicationLifetime with
         | :? IClassicDesktopStyleApplicationLifetime as desktopLifetime ->
-            let mainWindow = MainWindow()
+            let mainWindow = new MainWindow()
             desktopLifetime.MainWindow <- mainWindow
+            desktopLifetime.ShutdownMode <- ShutdownMode.OnMainWindowClose
+            printfn "MainWindow set as the main window."
         | _ -> ()
+
+open System
+open System.Diagnostics
+
+type ConsoleTraceListener() =
+    inherit TraceListener()
+    override _.Write(message: string) = message |> Console.Out.Write
+    override _.WriteLine(message: string) = message |> Console.Out.WriteLine
 
 [<Cmdlet(VerbsDiagnostic.Test, "AvaloniaFuncUI")>]
 [<OutputType(typeof<PSObject>)>]
 type SelectPocofCommand() =
     inherit PSCmdlet()
 
-    override __.BeginProcessing() = base.BeginProcessing()
+    override __.BeginProcessing() =
+        let pos = Trace.Listeners.Add(new ConsoleTraceListener())
+        printfn "BeginProcessing called. add listener at position %d" pos
 
     override __.ProcessRecord() = printfn "Hello from AvaloniaFuncUI"
 
@@ -132,9 +145,14 @@ type SelectPocofCommand() =
 
         printfn "Starting Avalonia FuncUI application..."
 
-        AppBuilder
-            .Configure<App>()
-            .UsePlatformDetect()
-            .UseSkia()
-            .StartWithClassicDesktopLifetime(Array.empty)
-        |> ignore
+        let app =
+            AppBuilder
+                .Configure<App>()
+                .UsePlatformDetect()
+                .UseSkia()
+                .LogToTrace()
+                .StartWithClassicDesktopLifetime(Array.empty)
+
+        printfn $"Avalonia FuncUI application started successfully. {app}"
+
+        Console.WriteLine("\n\n\n\n\n\n\n\n\n\n")
