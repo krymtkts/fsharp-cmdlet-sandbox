@@ -62,19 +62,26 @@ type MainWindow() as this =
         |> Program.withHost this
         |> Program.run
 
+    override this.OnClosed(e: System.EventArgs) : unit = base.OnClosed(e: System.EventArgs)
+
+
 type App() =
     inherit Application()
 
-    override this.Initialize() =
-        this.Styles.Add(FluentTheme())
-        this.RequestedThemeVariant <- Styling.ThemeVariant.Dark
+    member val mainWindow: MainWindow | null = null with get, set
+    member val desktopLifetime: IClassicDesktopStyleApplicationLifetime | null = null with get, set
+
+    override __.Initialize() =
+        __.Styles.Add(FluentTheme())
+        __.RequestedThemeVariant <- Styling.ThemeVariant.Dark
         printfn "Application initialized with FluentTheme and Dark variant."
 
-    override this.OnFrameworkInitializationCompleted() =
-        match this.ApplicationLifetime with
-        | :? IClassicDesktopStyleApplicationLifetime as desktopLifetime ->
-            let mainWindow = new MainWindow()
-            desktopLifetime.MainWindow <- mainWindow
+    override __.OnFrameworkInitializationCompleted() =
+        match __.ApplicationLifetime with
+        | :? IClassicDesktopStyleApplicationLifetime as (desktopLifetime: IClassicDesktopStyleApplicationLifetime) ->
+            __.desktopLifetime <- desktopLifetime
+            __.mainWindow <- new MainWindow()
+            desktopLifetime.MainWindow <- __.mainWindow
             desktopLifetime.ShutdownMode <- ShutdownMode.OnMainWindowClose
             printfn "MainWindow set as the main window."
         | _ -> ()
@@ -83,23 +90,12 @@ open System
 open System.Diagnostics
 open Avalonia.Logging
 
-type ConsoleTraceListener() =
-    inherit TraceListener()
-    override _.Write(message: string) = message |> Console.Out.Write
-    override _.WriteLine(message: string) = message |> Console.Out.WriteLine
-
 [<Cmdlet(VerbsDiagnostic.Test, "AvaloniaFuncUI")>]
 [<OutputType(typeof<PSObject>)>]
 type SelectPocofCommand() =
     inherit PSCmdlet()
 
-    override __.BeginProcessing() =
-        let pos = Trace.Listeners.Add(new ConsoleTraceListener())
-        printfn "BeginProcessing called. add listener at position %d" pos
-
-    override __.ProcessRecord() = printfn "Hello from AvaloniaFuncUI"
-
-    override __.EndProcessing() =
+    static let app =
         printfn
             $"OSArchitecture: {RuntimeInformation.OSArchitecture} OSDescription: {RuntimeInformation.OSDescription} FrameworkDescription: {RuntimeInformation.FrameworkDescription} ProcessArchitecture: {RuntimeInformation.ProcessArchitecture} RuntimeIdentifier: {RuntimeInformation.RuntimeIdentifier}"
 
@@ -136,16 +132,46 @@ type SelectPocofCommand() =
                 printfn "Failed to load SkiaSharp library: %s" e.Message
                 ())
 
-        printfn "Starting Avalonia FuncUI application..."
-
         let app =
+            let lt =
+                new Avalonia.Controls.ApplicationLifetimes.ClassicDesktopStyleApplicationLifetime()
+
             AppBuilder
                 .Configure<App>()
                 .UsePlatformDetect()
                 .UseSkia()
                 .LogToTextWriter(Console.Out, LogEventLevel.Verbose)
-                .StartWithClassicDesktopLifetime(Array.empty)
+                .SetupWithLifetime(lt)
+        // .SetupWithoutStarting()
 
-        printfn $"Avalonia FuncUI application started successfully. {app}"
+        printfn "Avalonia FuncUI application configured."
+
+        app
+
+    override __.BeginProcessing() = printfn "BeginProcessing called."
+
+    override __.ProcessRecord() = printfn "Hello from AvaloniaFuncUI"
+
+    override __.EndProcessing() =
+
+        printfn "Starting Avalonia FuncUI application..."
+
+        let app = (app.Instance :?> App)
+        app.mainWindow <- new MainWindow()
+        app.desktopLifetime.MainWindow <- app.mainWindow
+        app.desktopLifetime.ShutdownMode <- ShutdownMode.OnMainWindowClose
+
+        let cts = new Threading.CancellationTokenSource()
+
+        app.mainWindow.Closed.Add(fun _ ->
+            printfn "MainWindow closed, shutting down application."
+            cts.Cancel())
+
+        app.mainWindow.Show()
+        let ret = app.Run(cts.Token)
+        printfn $"Avalonia FuncUI application started successfully. {ret}"
+
+        // app.mainWindow.Close()
+        cts.Cancel()
 
         Console.WriteLine("\n\n\n\n\n\n\n\n\n\n")
