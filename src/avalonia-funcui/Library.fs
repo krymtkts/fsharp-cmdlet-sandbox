@@ -158,6 +158,7 @@ type SelectPocofCommand() =
 
         let app = (app.Instance :?> App)
         app.mainWindow <- new MainWindow()
+        app.mainWindow.WindowStartupLocation <- WindowStartupLocation.CenterScreen
         app.desktopLifetime.MainWindow <- app.mainWindow
         app.desktopLifetime.ShutdownMode <- ShutdownMode.OnMainWindowClose
 
