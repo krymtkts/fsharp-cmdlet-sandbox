@@ -29,27 +29,26 @@ module Main =
     let view (state: State) (dispatch: Msg -> unit) =
         DockPanel.create [
 
-                           DockPanel.children [
+            DockPanel.children [
 
-                                                TextBlock.create [
+                TextBlock.create [
 
-                                                                   TextBlock.text state.message
-                                                                   DockPanel.dock Dock.Top
+                    TextBlock.text state.message
+                    DockPanel.dock Dock.Top
 
-                                                                    ]
+                ]
 
-                                                Button.create [
+                Button.create [
 
-                                                                Button.content "Click Me"
-                                                                Button.onClick (fun _ ->
-                                                                    dispatch (Send "Button Clicked!"))
-                                                                DockPanel.dock Dock.Bottom
+                    Button.content "Click Me"
+                    Button.onClick (fun _ -> dispatch (Send "Button Clicked!"))
+                    DockPanel.dock Dock.Bottom
 
-                                                                 ]
+                ]
 
-                                                 ]
+            ]
 
-                            ]
+        ]
 
 type MainWindow() as this =
     inherit HostWindow()
@@ -82,6 +81,7 @@ type App() =
 
 open System
 open System.Diagnostics
+open Avalonia.Logging
 
 type ConsoleTraceListener() =
     inherit TraceListener()
@@ -106,13 +106,7 @@ type SelectPocofCommand() =
         printfn "EndProcessing called"
 
         let moduleDir =
-            System.IO.Path.GetDirectoryName(
-                System
-                    .Reflection
-                    .Assembly
-                    .GetExecutingAssembly()
-                    .Location
-            )
+            System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
 
         printfn "Module directory: %s" moduleDir
 
@@ -138,8 +132,7 @@ type SelectPocofCommand() =
                 if System.IO.File.Exists(skiaPath) then
                     printfn "SkiaSharp library found."
                     NativeLibrary.Load(skiaPath) |> ignore
-            with
-            | e ->
+            with e ->
                 printfn "Failed to load SkiaSharp library: %s" e.Message
                 ())
 
@@ -150,7 +143,7 @@ type SelectPocofCommand() =
                 .Configure<App>()
                 .UsePlatformDetect()
                 .UseSkia()
-                .LogToTrace()
+                .LogToTextWriter(Console.Out, LogEventLevel.Verbose)
                 .StartWithClassicDesktopLifetime(Array.empty)
 
         printfn $"Avalonia FuncUI application started successfully. {app}"
