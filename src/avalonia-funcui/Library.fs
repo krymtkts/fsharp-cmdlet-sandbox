@@ -80,9 +80,9 @@ type App() =
         match __.ApplicationLifetime with
         | :? IClassicDesktopStyleApplicationLifetime as (desktopLifetime: IClassicDesktopStyleApplicationLifetime) ->
             __.desktopLifetime <- desktopLifetime
-            __.mainWindow <- new MainWindow()
-            desktopLifetime.MainWindow <- __.mainWindow
-            desktopLifetime.ShutdownMode <- ShutdownMode.OnMainWindowClose
+            // __.mainWindow <- new MainWindow()
+            // desktopLifetime.MainWindow <- __.mainWindow
+            // desktopLifetime.ShutdownMode <- ShutdownMode.OnMainWindowClose
             printfn "MainWindow set as the main window."
         | _ -> ()
 
@@ -171,7 +171,7 @@ type SelectPocofCommand() =
         let ret = app.Run(cts.Token)
         printfn $"Avalonia FuncUI application started successfully. {ret}"
 
-        // app.mainWindow.Close()
+        app.mainWindow.Close()
         cts.Cancel()
 
         Console.WriteLine("\n\n\n\n\n\n\n\n\n\n")
