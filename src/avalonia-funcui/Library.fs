@@ -1,16 +1,55 @@
 ﻿namespace avalonia_funcui
 
 open System.Management.Automation
+open System
 open System.Runtime.InteropServices
 
 open Avalonia
 open Avalonia.Controls
-open Avalonia.Themes.Fluent
-open Avalonia.FuncUI.Hosts
-open Avalonia.FuncUI.Elmish
 open Avalonia.Controls.ApplicationLifetimes
 open Avalonia.FuncUI.DSL
+open Avalonia.FuncUI.Elmish
+open Avalonia.FuncUI.Hosts
+open Avalonia.Logging
+open Avalonia.Themes.Fluent
 open Elmish
+
+module AssemblyHelper =
+
+    let resolver =
+        DllImportResolver(fun libraryName assembly searchPath ->
+            let moduleDir =
+                System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
+
+            let skiaDll =
+                System.IO.Path.Combine(
+                    moduleDir,
+                    $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/{libraryName}.dll"
+                )
+
+
+            if skiaDll |> IO.File.Exists then
+                printfn "Loading SkiaSharp library from: %s" skiaDll
+
+                NativeLibrary.TryLoad(skiaDll)
+                |> function
+                    | true, out ->
+                        printfn "Successfully loaded library. Handle: %A" out
+                        out
+                    | _ ->
+                        printfn "SkiaSharp library loaded successfully."
+                        IntPtr.Zero
+            else
+                printfn "SkiaSharp library not found: %s" skiaDll
+                IntPtr.Zero)
+
+
+    do
+        printfn "Preparing Avalonia assemblies..."
+        NativeLibrary.SetDllImportResolver(typeof<SkiaSharp.SKImageInfo>.Assembly, resolver)
+        NativeLibrary.SetDllImportResolver(typeof<HarfBuzzSharp.Blob>.Assembly, resolver)
+        NativeLibrary.SetDllImportResolver(typeof<Avalonia.AppBuilder>.Assembly, resolver)
+        printfn "assemblies prepared."
 
 module Main =
     type State = { message: string }
@@ -86,56 +125,15 @@ type App() =
             printfn "MainWindow set as the main window."
         | _ -> ()
 
-open System
-open System.Diagnostics
-open Avalonia.Logging
-
-module AssemblyHelper =
-    let prepare () =
-        printfn
-            $"OSArchitecture: {RuntimeInformation.OSArchitecture} OSDescription: {RuntimeInformation.OSDescription} FrameworkDescription: {RuntimeInformation.FrameworkDescription} ProcessArchitecture: {RuntimeInformation.ProcessArchitecture} RuntimeIdentifier: {RuntimeInformation.RuntimeIdentifier}"
-
-        printfn "EndProcessing called"
-
-        let moduleDir =
-            System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
-
-        printfn "Module directory: %s" moduleDir
-
-        if RuntimeInformation.IsOSPlatform(OSPlatform.Windows) then
-            [ $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/av_libglesv2.dll"
-              $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/libHarfBuzzSharp.dll"
-              $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/libSkiaSharp.dll" ]
-        elif RuntimeInformation.IsOSPlatform(OSPlatform.OSX) then
-            [ $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/libAvaloniaNative.dylib"
-              $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/libHarfBuzzSharp.dylib"
-              $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/libSkiaSharp.dylib" ]
-        elif RuntimeInformation.IsOSPlatform(OSPlatform.Linux) then
-            [ $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/libHarfBuzzSharp.so"
-              $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/libSkiaSharp.so" ]
-        else
-            List.empty
-        |> List.iter (fun skiaDll ->
-            let skiaPath = System.IO.Path.Combine(moduleDir, skiaDll)
-
-            try
-                printfn "Loading SkiaSharp library from: %s" skiaPath
-
-                if System.IO.File.Exists(skiaPath) then
-                    printfn "SkiaSharp library found."
-                    NativeLibrary.Load(skiaPath) |> ignore
-            with e ->
-                printfn "Failed to load SkiaSharp library: %s" e.Message
-                ())
-
-
 [<Cmdlet(VerbsDiagnostic.Test, "AvaloniaFuncUI")>]
 [<OutputType(typeof<PSObject>)>]
 type SelectPocofCommand() =
     inherit PSCmdlet()
 
     static let app =
-        AssemblyHelper.prepare ()
+        printfn "\n\n\n\n\nConfiguring Avalonia FuncUI application...\n\n\n\n\n"
+        // AssemblyHelper.prepare ()
+        // printfn "prepared.\n\n\n\n\n"
 
         let app =
             let lt =
@@ -149,7 +147,7 @@ type SelectPocofCommand() =
                 .SetupWithLifetime(lt)
         // .SetupWithoutStarting()
 
-        printfn "Avalonia FuncUI application configured."
+        printfn "\n\n\n\n\nAvalonia FuncUI application configured.\n\n\n\n\n"
 
         app
 
@@ -158,6 +156,7 @@ type SelectPocofCommand() =
     override __.ProcessRecord() = printfn "Hello from AvaloniaFuncUI"
 
     override __.EndProcessing() =
+        printfn "\n\n\n\n\nEndProcessing called"
 
         printfn "Starting Avalonia FuncUI application..."
 
