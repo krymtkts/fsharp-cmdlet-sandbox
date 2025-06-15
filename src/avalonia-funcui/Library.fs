@@ -15,21 +15,22 @@ open Avalonia.Themes.Fluent
 open Elmish
 
 module AssemblyHelper =
-
     let resolver =
         let tryLoadLibrary (moduleDir: string) (extension: string) (libraryName: string) =
             let libPath =
-                if libraryName.EndsWith(extension) then
-                    $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/{libraryName}"
-                else
-                    $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/{libraryName}.{extension}"
+                let libPath =
+                    if extension |> libraryName.EndsWith then
+                        $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/{libraryName}"
+                    else
+                        $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/{libraryName}.{extension}"
 
-            let skiaDll = System.IO.Path.Combine(moduleDir, libPath)
+                System.IO.Path.Combine(moduleDir, libPath)
 
-            if skiaDll |> IO.File.Exists then
-                printfn "Loading SkiaSharp library from: %s" skiaDll
+            if libPath |> IO.File.Exists then
+                printfn "Loading SkiaSharp library from: %s" libPath
 
-                NativeLibrary.TryLoad(skiaDll)
+                libPath
+                |> NativeLibrary.TryLoad
                 |> function
                     | true, out ->
                         printfn "Successfully loaded library. Handle: %A" out
@@ -39,8 +40,9 @@ module AssemblyHelper =
                 IntPtr.Zero
 
         DllImportResolver(fun libraryName assembly searchPath ->
+            // NOTE: those bindings cannot move out of the function, it will cause a deadlock.
             let moduleDir =
-                System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
+                System.IO.Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location)
 
             let extension =
                 if RuntimeInformation.IsOSPlatform(OSPlatform.Windows) then
@@ -52,21 +54,18 @@ module AssemblyHelper =
                 else
                     failwith "Unsupported OS"
 
-            let tryLoadLibrary = tryLoadLibrary moduleDir extension
-
-            tryLoadLibrary libraryName
-            |> function
-                | ptr when ptr = IntPtr.Zero ->
-                    // NOTE: fallback to the default behavior if the library is not found.
-                    NativeLibrary.TryLoad(libraryName, assembly, searchPath)
-                    |> function
-                        | true, out ->
-                            printfn "Successfully loaded library. Handle: %A" out
-                            out
-                        | _ ->
-                            printfn "Library not found: %s" libraryName
-                            IntPtr.Zero
-                | ptr -> ptr)
+            match tryLoadLibrary moduleDir extension libraryName with
+            | ptr when ptr = IntPtr.Zero ->
+                // NOTE: fallback to the default behavior if the library is not found.
+                match NativeLibrary.TryLoad(libraryName, assembly, searchPath) with
+                | true, out ->
+                    printfn "Successfully loaded library. Handle: %A" out
+                    out
+                | _ ->
+                    // NOTE: Returning IntPtr.Zero means the library was not found. This will cause an error when P/Invoke is called.
+                    printfn "Library not found: %s" libraryName
+                    IntPtr.Zero
+            | ptr -> ptr)
 
     do
         printfn "\n\n\n\n\nPreparing Avalonia assemblies...\n\n\n\n\n"
