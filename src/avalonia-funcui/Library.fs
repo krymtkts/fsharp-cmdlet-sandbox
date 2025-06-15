@@ -1,7 +1,8 @@
 ﻿namespace avalonia_funcui
 
-open System.Management.Automation
 open System
+open System.Collections
+open System.Management.Automation
 open System.Runtime.InteropServices
 
 open Avalonia
@@ -28,7 +29,7 @@ module AssemblyHelper =
         else
             failwith "Unsupported OS"
 
-    let resolver moduleDir extension =
+    let resolver (ptrCache: System.Collections.Concurrent.ConcurrentDictionary<string, nativeint>) moduleDir extension =
         let tryLoadLibrary (moduleDir: string) (extension: string) (libraryName: string) =
             let libPath =
                 let libPath =
@@ -45,33 +46,40 @@ module AssemblyHelper =
                 libPath
                 |> NativeLibrary.TryLoad
                 |> function
-                    | true, out ->
-                        printfn "Successfully loaded library. Handle: %A" out
-                        out
+                    | true, ptr ->
+                        printfn "Successfully loaded library. Handle: %A" ptr
+                        ptr
                     | _ -> IntPtr.Zero
             else
                 IntPtr.Zero
 
         DllImportResolver(fun libraryName assembly searchPath ->
-            match tryLoadLibrary moduleDir extension libraryName with
-            | ptr when ptr = IntPtr.Zero ->
-                // NOTE: fallback to the default behavior if the library is not found.
-                match NativeLibrary.TryLoad(libraryName, assembly, searchPath) with
-                | true, ptr ->
-                    printfn "Successfully loaded library by fallback. Handle: %A" ptr
-                    ptr
-                | _ ->
-                    // NOTE: Returning IntPtr.Zero means the library was not found. This will cause an error when P/Invoke is called.
-                    printfn "Library not found: %s" libraryName
-                    IntPtr.Zero
-            | ptr -> ptr)
+            match ptrCache.TryGetValue(libraryName) with
+            | true, ptr -> ptr
+            | _ ->
+                match tryLoadLibrary moduleDir extension libraryName with
+                | ptr when ptr = IntPtr.Zero ->
+                    // NOTE: fallback to the default behavior if the library is not found.
+                    match NativeLibrary.TryLoad(libraryName, assembly, searchPath) with
+                    | true, ptr ->
+                        printfn "Successfully loaded library by fallback. Handle: %A" ptr
+                        ptrCache.TryAdd(libraryName, ptr) |> ignore
+                        ptr
+                    | _ ->
+                        // NOTE: Returning IntPtr.Zero means the library was not found. This will cause an error when P/Invoke is called.
+                        printfn "Library not found: %s" libraryName
+                        IntPtr.Zero
+                | ptr ->
+                    ptrCache.TryAdd(libraryName, ptr) |> ignore
+                    ptr)
 
     do
         printfn "\n\n\n\n\nPreparing Avalonia assemblies...\n\n\n\n\n"
         // NOTE: those bindings cannot move out to static, it will cause a deadlock.
         let moduleDir = getModuleDir ()
         let extension = detectExtension ()
-        let resolver = resolver moduleDir extension
+        let cache = new Concurrent.ConcurrentDictionary<string, nativeint>()
+        let resolver = resolver cache moduleDir extension
         NativeLibrary.SetDllImportResolver(typeof<SkiaSharp.SKImageInfo>.Assembly, resolver)
         NativeLibrary.SetDllImportResolver(typeof<HarfBuzzSharp.Buffer>.Assembly, resolver)
         NativeLibrary.SetDllImportResolver(typeof<Avalonia.AppBuilder>.Assembly, resolver)
