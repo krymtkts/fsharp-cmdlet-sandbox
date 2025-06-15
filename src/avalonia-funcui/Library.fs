@@ -90,12 +90,8 @@ open System
 open System.Diagnostics
 open Avalonia.Logging
 
-[<Cmdlet(VerbsDiagnostic.Test, "AvaloniaFuncUI")>]
-[<OutputType(typeof<PSObject>)>]
-type SelectPocofCommand() =
-    inherit PSCmdlet()
-
-    static let app =
+module AssemblyHelper =
+    let prepare () =
         printfn
             $"OSArchitecture: {RuntimeInformation.OSArchitecture} OSDescription: {RuntimeInformation.OSDescription} FrameworkDescription: {RuntimeInformation.FrameworkDescription} ProcessArchitecture: {RuntimeInformation.ProcessArchitecture} RuntimeIdentifier: {RuntimeInformation.RuntimeIdentifier}"
 
@@ -131,6 +127,15 @@ type SelectPocofCommand() =
             with e ->
                 printfn "Failed to load SkiaSharp library: %s" e.Message
                 ())
+
+
+[<Cmdlet(VerbsDiagnostic.Test, "AvaloniaFuncUI")>]
+[<OutputType(typeof<PSObject>)>]
+type SelectPocofCommand() =
+    inherit PSCmdlet()
+
+    static let app =
+        AssemblyHelper.prepare ()
 
         let app =
             let lt =
