@@ -15,7 +15,20 @@ open Avalonia.Themes.Fluent
 open Elmish
 
 module AssemblyHelper =
-    let resolver =
+    let getModuleDir () =
+        System.IO.Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location)
+
+    let detectExtension () =
+        if RuntimeInformation.IsOSPlatform(OSPlatform.Windows) then
+            "dll"
+        elif RuntimeInformation.IsOSPlatform(OSPlatform.Linux) then
+            "so"
+        elif RuntimeInformation.IsOSPlatform(OSPlatform.OSX) then
+            "dylib"
+        else
+            failwith "Unsupported OS"
+
+    let resolver moduleDir extension =
         let tryLoadLibrary (moduleDir: string) (extension: string) (libraryName: string) =
             let libPath =
                 let libPath =
@@ -40,27 +53,13 @@ module AssemblyHelper =
                 IntPtr.Zero
 
         DllImportResolver(fun libraryName assembly searchPath ->
-            // NOTE: those bindings cannot move out of the function, it will cause a deadlock.
-            let moduleDir =
-                System.IO.Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location)
-
-            let extension =
-                if RuntimeInformation.IsOSPlatform(OSPlatform.Windows) then
-                    "dll"
-                elif RuntimeInformation.IsOSPlatform(OSPlatform.Linux) then
-                    "so"
-                elif RuntimeInformation.IsOSPlatform(OSPlatform.OSX) then
-                    "dylib"
-                else
-                    failwith "Unsupported OS"
-
             match tryLoadLibrary moduleDir extension libraryName with
             | ptr when ptr = IntPtr.Zero ->
                 // NOTE: fallback to the default behavior if the library is not found.
                 match NativeLibrary.TryLoad(libraryName, assembly, searchPath) with
-                | true, out ->
-                    printfn "Successfully loaded library. Handle: %A" out
-                    out
+                | true, ptr ->
+                    printfn "Successfully loaded library by fallback. Handle: %A" ptr
+                    ptr
                 | _ ->
                     // NOTE: Returning IntPtr.Zero means the library was not found. This will cause an error when P/Invoke is called.
                     printfn "Library not found: %s" libraryName
@@ -69,6 +68,10 @@ module AssemblyHelper =
 
     do
         printfn "\n\n\n\n\nPreparing Avalonia assemblies...\n\n\n\n\n"
+        // NOTE: those bindings cannot move out to static, it will cause a deadlock.
+        let moduleDir = getModuleDir ()
+        let extension = detectExtension ()
+        let resolver = resolver moduleDir extension
         NativeLibrary.SetDllImportResolver(typeof<SkiaSharp.SKImageInfo>.Assembly, resolver)
         NativeLibrary.SetDllImportResolver(typeof<HarfBuzzSharp.Buffer>.Assembly, resolver)
         NativeLibrary.SetDllImportResolver(typeof<Avalonia.AppBuilder>.Assembly, resolver)
