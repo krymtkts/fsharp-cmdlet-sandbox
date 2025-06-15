@@ -17,16 +17,14 @@ open Elmish
 module AssemblyHelper =
 
     let resolver =
-        DllImportResolver(fun libraryName assembly searchPath ->
-            let moduleDir =
-                System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
+        let tryLoadLibrary (moduleDir: string) (extension: string) (libraryName: string) =
+            let libPath =
+                if libraryName.EndsWith(extension) then
+                    $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/{libraryName}"
+                else
+                    $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/{libraryName}.{extension}"
 
-            let skiaDll =
-                System.IO.Path.Combine(
-                    moduleDir,
-                    $"runtimes/{RuntimeInformation.RuntimeIdentifier}/native/{libraryName}.dll"
-                )
-
+            let skiaDll = System.IO.Path.Combine(moduleDir, libPath)
 
             if skiaDll |> IO.File.Exists then
                 printfn "Loading SkiaSharp library from: %s" skiaDll
@@ -36,20 +34,47 @@ module AssemblyHelper =
                     | true, out ->
                         printfn "Successfully loaded library. Handle: %A" out
                         out
-                    | _ ->
-                        printfn "SkiaSharp library loaded successfully."
-                        IntPtr.Zero
+                    | _ -> IntPtr.Zero
             else
-                printfn "SkiaSharp library not found: %s" skiaDll
-                IntPtr.Zero)
+                IntPtr.Zero
 
+        DllImportResolver(fun libraryName assembly searchPath ->
+            let moduleDir =
+                System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
+
+            let extension =
+                if RuntimeInformation.IsOSPlatform(OSPlatform.Windows) then
+                    "dll"
+                elif RuntimeInformation.IsOSPlatform(OSPlatform.Linux) then
+                    "so"
+                elif RuntimeInformation.IsOSPlatform(OSPlatform.OSX) then
+                    "dylib"
+                else
+                    failwith "Unsupported OS"
+
+            let tryLoadLibrary = tryLoadLibrary moduleDir extension
+
+            tryLoadLibrary libraryName
+            |> function
+                | ptr when ptr = IntPtr.Zero ->
+                    // NOTE: fallback to the default behavior if the library is not found.
+                    NativeLibrary.TryLoad(libraryName, assembly, searchPath)
+                    |> function
+                        | true, out ->
+                            printfn "Successfully loaded library. Handle: %A" out
+                            out
+                        | _ ->
+                            printfn "Library not found: %s" libraryName
+                            IntPtr.Zero
+                | ptr -> ptr)
 
     do
-        printfn "Preparing Avalonia assemblies..."
+        printfn "\n\n\n\n\nPreparing Avalonia assemblies...\n\n\n\n\n"
         NativeLibrary.SetDllImportResolver(typeof<SkiaSharp.SKImageInfo>.Assembly, resolver)
-        NativeLibrary.SetDllImportResolver(typeof<HarfBuzzSharp.Blob>.Assembly, resolver)
+        NativeLibrary.SetDllImportResolver(typeof<HarfBuzzSharp.Buffer>.Assembly, resolver)
         NativeLibrary.SetDllImportResolver(typeof<Avalonia.AppBuilder>.Assembly, resolver)
-        printfn "assemblies prepared."
+        NativeLibrary.SetDllImportResolver(typeof<Avalonia.Win32.AngleOptions>.Assembly, resolver)
+        printfn "\n\n\n\n\nAvalonia assemblies prepared.\n\n\n\n\n"
 
 module Main =
     type State = { message: string }
