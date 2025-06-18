@@ -87,6 +87,8 @@ module AssemblyHelper =
         printfn "\n\n\n\n\nAvalonia assemblies prepared.\n\n\n\n\n"
 
 module Main =
+    open Avalonia.FuncUI
+
     type State = { message: string }
 
     let init () = { message = "Hello, World!" }, Cmd.none
@@ -101,16 +103,36 @@ module Main =
         | _ -> state, Cmd.none
 
     let view (state: State) (dispatch: Msg -> unit) =
-        DockPanel.create [
-            DockPanel.children [
-                TextBlock.create [ TextBlock.text state.message; DockPanel.dock Dock.Top ]
-                Button.create [
-                    Button.content "Click Me"
-                    Button.onClick (fun _ -> dispatch (Send "Button Clicked!"))
-                    DockPanel.dock Dock.Bottom
-                ]
+        let cellSize = 10.0
+        let rows, cols = 30, 30
+        let width = float cols * cellSize
+        let height = float rows * cellSize
+        let isAlive row col = (row + col) % 2 = 0
+
+        let cells =
+            Array2D.init (int height) (int width) (fun row col -> if isAlive row col then "white" else "black")
+
+        Canvas.create [
+            Canvas.width width
+            Canvas.height height
+            Canvas.children [
+                for i in 0 .. (rows * cols - 1) do
+                    let row = i / cols
+                    let col = i % cols
+                    let color = cells.[row, col]
+
+                    yield
+                        Rectangle.create [
+                            Shapes.Rectangle.width cellSize
+                            Shapes.Rectangle.height cellSize
+                            Shapes.Rectangle.fill (Media.SolidColorBrush(Avalonia.Media.Color.Parse color))
+                            Canvas.left (float col * cellSize)
+                            Canvas.top (float row * cellSize)
+                        ]
             ]
+
         ]
+        |> generalize
 
 type MainWindow() as this =
     inherit HostWindow()
@@ -119,6 +141,7 @@ type MainWindow() as this =
         base.Title <- "Example"
         base.Height <- 300.0
         base.Width <- 300.0
+        base.CanResize <- false
 
         Program.mkProgram Main.init Main.update Main.view
         |> Program.withHost this
@@ -164,7 +187,8 @@ type SelectPocofCommand() =
                 .Configure<App>()
                 .UsePlatformDetect()
                 .UseSkia()
-                .LogToTextWriter(Console.Out, LogEventLevel.Verbose)
+                // NOTE: Graphics operations can produce an extremely large amount of log output, which may be useful for debugging.
+                // .LogToTextWriter(Console.Out, LogEventLevel.Verbose)
                 .SetupWithLifetime(lt)
 
         printfn "\n\n\n\n\nAvalonia FuncUI application configured.\n\n\n\n\n"
