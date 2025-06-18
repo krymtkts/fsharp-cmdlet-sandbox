@@ -29,7 +29,7 @@ module AssemblyHelper =
         else
             failwith "Unsupported OS"
 
-    let resolver (ptrCache: System.Collections.Concurrent.ConcurrentDictionary<string, nativeint>) moduleDir extension =
+    let resolver (ptrCache: Concurrent.ConcurrentDictionary<string, nativeint>) moduleDir extension =
         let tryLoadLibrary (moduleDir: string) (extension: string) (libraryName: string) =
             let libPath =
                 let libPath =
@@ -54,7 +54,7 @@ module AssemblyHelper =
                 IntPtr.Zero
 
         DllImportResolver(fun libraryName assembly searchPath ->
-            match ptrCache.TryGetValue(libraryName) with
+            match libraryName |> ptrCache.TryGetValue with
             | true, ptr -> ptr
             | _ ->
                 match tryLoadLibrary moduleDir extension libraryName with
@@ -82,8 +82,8 @@ module AssemblyHelper =
         let resolver = resolver cache moduleDir extension
         NativeLibrary.SetDllImportResolver(typeof<SkiaSharp.SKImageInfo>.Assembly, resolver)
         NativeLibrary.SetDllImportResolver(typeof<HarfBuzzSharp.Buffer>.Assembly, resolver)
-        NativeLibrary.SetDllImportResolver(typeof<Avalonia.AppBuilder>.Assembly, resolver)
-        NativeLibrary.SetDllImportResolver(typeof<Avalonia.Win32.AngleOptions>.Assembly, resolver)
+        NativeLibrary.SetDllImportResolver(typeof<AppBuilder>.Assembly, resolver)
+        NativeLibrary.SetDllImportResolver(typeof<Win32.AngleOptions>.Assembly, resolver)
         printfn "\n\n\n\n\nAvalonia assemblies prepared.\n\n\n\n\n"
 
 module Main =
@@ -102,26 +102,14 @@ module Main =
 
     let view (state: State) (dispatch: Msg -> unit) =
         DockPanel.create [
-
             DockPanel.children [
-
-                TextBlock.create [
-
-                    TextBlock.text state.message
-                    DockPanel.dock Dock.Top
-
-                ]
-
+                TextBlock.create [ TextBlock.text state.message; DockPanel.dock Dock.Top ]
                 Button.create [
-
                     Button.content "Click Me"
                     Button.onClick (fun _ -> dispatch (Send "Button Clicked!"))
                     DockPanel.dock Dock.Bottom
-
                 ]
-
             ]
-
         ]
 
 type MainWindow() as this =
@@ -132,12 +120,11 @@ type MainWindow() as this =
         base.Height <- 300.0
         base.Width <- 300.0
 
-        Elmish.Program.mkProgram Main.init Main.update Main.view
+        Program.mkProgram Main.init Main.update Main.view
         |> Program.withHost this
         |> Program.run
 
-    override this.OnClosed(e: System.EventArgs) : unit = base.OnClosed(e: System.EventArgs)
-
+    override __.OnClosed(e: EventArgs) : unit = base.OnClosed(e: EventArgs)
 
 type App() =
     inherit Application()
@@ -171,8 +158,7 @@ type SelectPocofCommand() =
         // printfn "prepared.\n\n\n\n\n"
 
         let app =
-            let lt =
-                new Avalonia.Controls.ApplicationLifetimes.ClassicDesktopStyleApplicationLifetime()
+            let lt = new ClassicDesktopStyleApplicationLifetime()
 
             AppBuilder
                 .Configure<App>()
@@ -180,7 +166,6 @@ type SelectPocofCommand() =
                 .UseSkia()
                 .LogToTextWriter(Console.Out, LogEventLevel.Verbose)
                 .SetupWithLifetime(lt)
-        // .SetupWithoutStarting()
 
         printfn "\n\n\n\n\nAvalonia FuncUI application configured.\n\n\n\n\n"
 
@@ -195,7 +180,7 @@ type SelectPocofCommand() =
 
         printfn "Starting Avalonia FuncUI application..."
 
-        let app = (app.Instance :?> App)
+        let app = app.Instance :?> App
         app.mainWindow <- new MainWindow()
         app.mainWindow.WindowStartupLocation <- WindowStartupLocation.CenterScreen
         app.desktopLifetime.MainWindow <- app.mainWindow
