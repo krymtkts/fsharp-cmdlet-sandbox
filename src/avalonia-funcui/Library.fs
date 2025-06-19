@@ -104,7 +104,7 @@ module Main =
 
     let view (state: State) (dispatch: Msg -> unit) =
         let cellSize = 10.0
-        let rows, cols = 30, 30
+        let rows, cols = 50, 50
         let width = float cols * cellSize
         let height = float rows * cellSize
         let isAlive row col = (row + col) % 2 = 0 = state.swap
@@ -142,8 +142,8 @@ type MainWindow() as this =
 
     do
         base.Title <- "Example"
-        base.Height <- 300.0
-        base.Width <- 300.0
+        base.Height <- 500.0
+        base.Width <- 500.0
         base.CanResize <- false
 
         Program.mkProgram Main.init Main.update Main.view
