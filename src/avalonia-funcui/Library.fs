@@ -89,25 +89,25 @@ module AssemblyHelper =
 module Main =
     open Avalonia.FuncUI
 
-    type State = { message: string }
+    type State = { swap: bool }
 
-    let init () = { message = "Hello, World!" }, Cmd.none
+    let init () = { swap = true }, Cmd.none
 
     type Msg =
-        | Send of string
-        | NoOp
+        | Swap
+        | Noop
 
     let update (msg: Msg) (state: State) : State * Cmd<_> =
         match msg with
-        | Send newMessage -> { state with message = newMessage }, Cmd.none
-        | _ -> state, Cmd.none
+        | Swap -> { state with swap = not state.swap }, Cmd.none
+        | Noop -> state, Cmd.none
 
     let view (state: State) (dispatch: Msg -> unit) =
         let cellSize = 10.0
         let rows, cols = 30, 30
         let width = float cols * cellSize
         let height = float rows * cellSize
-        let isAlive row col = (row + col) % 2 = 0
+        let isAlive row col = (row + col) % 2 = 0 = state.swap
 
         let cells =
             Array2D.init (int height) (int width) (fun row col -> if isAlive row col then "white" else "black")
@@ -128,6 +128,9 @@ module Main =
                             Shapes.Rectangle.fill (Media.SolidColorBrush(Avalonia.Media.Color.Parse color))
                             Canvas.left (float col * cellSize)
                             Canvas.top (float row * cellSize)
+                            Shapes.Rectangle.onTapped (fun _ ->
+                                dispatch Swap
+                                printfn "Cell at (%d, %d) tapped." row col)
                         ]
             ]
 
